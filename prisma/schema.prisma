@@ -1,0 +1,596 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// CORE MODELS - Multi-Tenant Foundation
+// ============================================
+
+// Organization (Tenant) - Core of multi-tenancy
+model Organization {
+  id          String   @id @default(cuid())
+  clerkOrgId  String   @unique // Clerk organization ID
+  name        String
+  slug        String   @unique
+  logo        String?
+  website     String?
+  industry    String?
+  currency    String   @default("USD")
+  timezone    String   @default("UTC")
+  status      String   @default("ACTIVE") // ACTIVE, SUSPENDED, DELETED
+  plan        String   @default("STARTER") // STARTER, PROFESSIONAL, ENTERPRISE
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  auditLogs     AuditLog[]
+  accounts      Account[]
+  customers     Customer[]
+  vendors       Vendor[]
+  invoices      Invoice[]
+  bills         Bill[]
+  payments      Payment[]
+  employees     Employee[]
+  contacts      Contact[]
+  leads         Lead[]
+  opportunities Opportunity[]
+  activities    Activity[]
+
+  @@index([clerkOrgId])
+  @@index([status])
+}
+
+// Audit Log - Comprehensive audit trail for all operations
+model AuditLog {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String   // Clerk user ID
+  action         String   // CREATE, UPDATE, DELETE, READ
+  entityType     String   // Table name (e.g., "Invoice", "Customer")
+  entityId       String   // Record ID
+  oldValues      Json?    // Previous state (for UPDATE/DELETE)
+  newValues      Json?    // New state (for CREATE/UPDATE)
+  ipAddress      String?
+  userAgent      String?
+  timestamp      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([timestamp])
+  @@index([entityType, entityId])
+}
+
+// ============================================
+// FINANCE & ACCOUNTING MODELS
+// ============================================
+
+// Chart of Accounts
+model Account {
+  id             String   @id @default(cuid())
+  organizationId String
+  accountNumber  String
+  accountName    String
+  accountType    String   // ASSET, LIABILITY, EQUITY, REVENUE, EXPENSE
+  parentId       String?
+  balance        Decimal  @default(0) @db.Decimal(15, 2)
+  currency       String   @default("USD")
+  isActive       Boolean  @default(true)
+  description    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      String
+  updatedBy      String?
+  deletedAt      DateTime?
+  deletedBy      String?
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  parent       Account?          @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children     Account[]         @relation("AccountHierarchy")
+  entries      TransactionEntry[]
+  budgetItems  BudgetLineItem[]
+
+  @@unique([organizationId, accountNumber])
+  @@index([organizationId])
+  @@index([accountType])
+  @@index([deletedAt])
+}
+
+// General Ledger Transactions
+model Transaction {
+  id              String   @id @default(cuid())
+  organizationId  String
+  transactionDate DateTime
+  description     String
+  referenceNumber String?
+  totalAmount     Decimal  @db.Decimal(15, 2)
+  status          String   @default("POSTED") // DRAFT, POSTED, VOID
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdBy       String
+  updatedBy       String?
+  deletedAt       DateTime?
+  deletedBy       String?
+
+  entries TransactionEntry[]
+
+  @@index([organizationId])
+  @@index([transactionDate])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+// Double-entry accounting entries
+model TransactionEntry {
+  id            String  @id @default(cuid())
+  transactionId String
+  accountId     String
+  debit         Decimal @default(0) @db.Decimal(15, 2)
+  credit        Decimal @default(0) @db.Decimal(15, 2)
+  description   String?
+
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  account     Account     @relation(fields: [accountId], references: [id])
+
+  @@index([transactionId])
+  @@index([accountId])
+}
+
+// ============================================
+// CRM MODELS
+// ============================================
+
+// Customer
+model Customer {
+  id             String   @id @default(cuid())
+  organizationId String
+  customerNumber String
+  companyName    String
+  contactPerson  String?
+  email          String
+  phone          String?
+  website        String?
+  address        String?
+  city           String?
+  state          String?
+  country        String?
+  postalCode     String?
+  taxId          String?
+  status         String   @default("ACTIVE") // ACTIVE, INACTIVE
+  customerType   String   @default("BUSINESS") // INDIVIDUAL, BUSINESS
+  creditLimit    Decimal? @default(0) @db.Decimal(15, 2)
+  paymentTerms   String?  // NET_30, NET_60, IMMEDIATE
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      String
+  updatedBy      String?
+  deletedAt      DateTime?
+  deletedBy      String?
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invoices     Invoice[]
+  contacts     Contact[]
+  opportunities Opportunity[]
+  activities   Activity[]
+
+  @@unique([organizationId, customerNumber])
+  @@index([organizationId])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+// Vendor
+model Vendor {
+  id             String   @id @default(cuid())
+  organizationId String
+  vendorNumber   String
+  companyName    String
+  contactPerson  String?
+  email          String
+  phone          String?
+  address        String?
+  city           String?
+  state          String?
+  country        String?
+  taxId          String?
+  paymentTerms   String?
+  status         String   @default("ACTIVE")
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      String
+  updatedBy      String?
+  deletedAt      DateTime?
+  deletedBy      String?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  bills        Bill[]
+
+  @@unique([organizationId, vendorNumber])
+  @@index([organizationId])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+// ============================================
+// INVOICES & BILLS
+// ============================================
+
+// Invoices (Accounts Receivable)
+model Invoice {
+  id             String   @id @default(cuid())
+  organizationId String
+  invoiceNumber  String
+  customerId     String
+  invoiceDate    DateTime
+  dueDate        DateTime
+  subtotal       Decimal  @db.Decimal(15, 2)
+  taxAmount      Decimal  @default(0) @db.Decimal(15, 2)
+  discountAmount Decimal  @default(0) @db.Decimal(15, 2)
+  totalAmount    Decimal  @db.Decimal(15, 2)
+  paidAmount     Decimal  @default(0) @db.Decimal(15, 2)
+  status         String   @default("DRAFT") // DRAFT, SENT, PAID, OVERDUE, VOID
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      String
+  updatedBy      String?
+  deletedAt      DateTime?
+  deletedBy      String?
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer     Customer          @relation(fields: [customerId], references: [id])
+  lineItems    InvoiceLineItem[]
+  payments     Payment[]         @relation("InvoicePayments")
+
+  @@unique([organizationId, invoiceNumber])
+  @@index([organizationId])
+  @@index([customerId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([deletedAt])
+}
+
+model InvoiceLineItem {
+  id          String  @id @default(cuid())
+  invoiceId   String
+  description String
+  quantity    Decimal @db.Decimal(15, 4)
+  unitPrice   Decimal @db.Decimal(15, 2)
+  taxRate     Decimal @default(0) @db.Decimal(5, 2)
+  amount      Decimal @db.Decimal(15, 2)
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+}
+
+// Bills (Accounts Payable)
+model Bill {
+  id             String   @id @default(cuid())
+  organizationId String
+  billNumber     String
+  vendorId       String
+  billDate       DateTime
+  dueDate        DateTime
+  subtotal       Decimal  @db.Decimal(15, 2)
+  taxAmount      Decimal  @default(0) @db.Decimal(15, 2)
+  totalAmount    Decimal  @db.Decimal(15, 2)
+  paidAmount     Decimal  @default(0) @db.Decimal(15, 2)
+  status         String   @default("DRAFT") // DRAFT, APPROVED, PAID, OVERDUE, VOID
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      String
+  updatedBy      String?
+  deletedAt      DateTime?
+  deletedBy      String?
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  vendor       Vendor         @relation(fields: [vendorId], references: [id])
+  lineItems    BillLineItem[]
+  payments     Payment[]      @relation("BillPayments")
+
+  @@unique([organizationId, billNumber])
+  @@index([organizationId])
+  @@index([vendorId])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model BillLineItem {
+  id          String  @id @default(cuid())
+  billId      String
+  description String
+  quantity    Decimal @db.Decimal(15, 4)
+  unitPrice   Decimal @db.Decimal(15, 2)
+  taxRate     Decimal @default(0) @db.Decimal(5, 2)
+  amount      Decimal @db.Decimal(15, 2)
+
+  bill Bill @relation(fields: [billId], references: [id], onDelete: Cascade)
+
+  @@index([billId])
+}
+
+// Payments
+model Payment {
+  id              String   @id @default(cuid())
+  organizationId  String
+  paymentNumber   String
+  paymentDate     DateTime
+  amount          Decimal  @db.Decimal(15, 2)
+  paymentMethod   String   // CASH, CHECK, CREDIT_CARD, BANK_TRANSFER
+  referenceNumber String?
+  notes           String?
+  invoiceId       String?
+  billId          String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdBy       String
+  updatedBy       String?
+  deletedAt       DateTime?
+  deletedBy       String?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invoice      Invoice?     @relation("InvoicePayments", fields: [invoiceId], references: [id])
+  bill         Bill?        @relation("BillPayments", fields: [billId], references: [id])
+
+  @@unique([organizationId, paymentNumber])
+  @@index([organizationId])
+  @@index([invoiceId])
+  @@index([billId])
+  @@index([deletedAt])
+}
+
+// ============================================
+// BUDGET MODELS
+// ============================================
+
+model Budget {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  fiscalYear     Int
+  startDate      DateTime
+  endDate        DateTime
+  totalAmount    Decimal  @db.Decimal(15, 2)
+  status         String   @default("DRAFT") // DRAFT, ACTIVE, CLOSED
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      String
+  updatedBy      String?
+  deletedAt      DateTime?
+  deletedBy      String?
+
+  lineItems BudgetLineItem[]
+
+  @@index([organizationId])
+  @@index([fiscalYear])
+  @@index([deletedAt])
+}
+
+model BudgetLineItem {
+  id        String  @id @default(cuid())
+  budgetId  String
+  accountId String
+  amount    Decimal @db.Decimal(15, 2)
+  period    String  // MONTHLY, QUARTERLY, ANNUAL
+
+  budget  Budget  @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  account Account @relation(fields: [accountId], references: [id])
+
+  @@index([budgetId])
+  @@index([accountId])
+}
+
+// ============================================
+// HR & PAYROLL MODELS
+// ============================================
+
+model Employee {
+  id              String    @id @default(cuid())
+  organizationId  String
+  employeeNumber  String
+  firstName       String
+  lastName        String
+  email           String
+  phone           String?
+  dateOfBirth     DateTime?
+  hireDate        DateTime
+  terminationDate DateTime?
+  department      String?
+  position        String
+  employmentType  String    // FULL_TIME, PART_TIME, CONTRACT
+  status          String    @default("ACTIVE") // ACTIVE, INACTIVE, TERMINATED
+  salary          Decimal?  @db.Decimal(15, 2)
+  currency        String    @default("USD")
+  payFrequency    String?   // WEEKLY, BI_WEEKLY, MONTHLY
+  managerId       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdBy       String
+  updatedBy       String?
+  deletedAt       DateTime?
+  deletedBy       String?
+
+  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  manager       Employee?    @relation("EmployeeManager", fields: [managerId], references: [id])
+  directReports Employee[]   @relation("EmployeeManager")
+
+  @@unique([organizationId, employeeNumber])
+  @@index([organizationId])
+  @@index([status])
+  @@index([department])
+  @@index([deletedAt])
+}
+
+// ============================================
+// CRM MODELS - Leads, Opportunities, Activities
+// ============================================
+
+// Contact - Individual contacts (can be linked to customers)
+model Contact {
+  id             String   @id @default(cuid())
+  organizationId String
+  customerId     String?
+  firstName      String
+  lastName       String
+  email          String
+  phone          String?
+  mobile         String?
+  position       String?
+  department     String?
+  isPrimary      Boolean  @default(false)
+  status         String   @default("ACTIVE") // ACTIVE, INACTIVE
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      String
+  updatedBy      String?
+  deletedAt      DateTime?
+  deletedBy      String?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer     Customer?    @relation(fields: [customerId], references: [id])
+  leads        Lead[]
+  activities   Activity[]
+
+  @@index([organizationId])
+  @@index([customerId])
+  @@index([email])
+  @@index([deletedAt])
+}
+
+// Lead - Sales leads/prospects
+model Lead {
+  id             String    @id @default(cuid())
+  organizationId String
+  leadNumber     String
+  companyName    String?
+  contactId      String?
+  firstName      String
+  lastName       String
+  email          String
+  phone          String?
+  source         String    // WEBSITE, REFERRAL, COLD_CALL, EMAIL, TRADE_SHOW, OTHER
+  status         String    @default("NEW") // NEW, CONTACTED, QUALIFIED, UNQUALIFIED, CONVERTED
+  rating         String?   // HOT, WARM, COLD
+  industry       String?
+  estimatedValue Decimal?  @db.Decimal(15, 2)
+  notes          String?
+  assignedTo     String?   // Clerk user ID
+  convertedAt    DateTime?
+  convertedToCustomerId String?
+  convertedToOpportunityId String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  createdBy      String
+  updatedBy      String?
+  deletedAt      DateTime?
+  deletedBy      String?
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact      Contact?      @relation(fields: [contactId], references: [id])
+  activities   Activity[]
+
+  @@unique([organizationId, leadNumber])
+  @@index([organizationId])
+  @@index([status])
+  @@index([source])
+  @@index([assignedTo])
+  @@index([deletedAt])
+}
+
+// Opportunity - Sales opportunities/pipeline
+model Opportunity {
+  id             String   @id @default(cuid())
+  organizationId String
+  opportunityNumber String
+  name           String
+  customerId     String
+  stage          String   @default("PROSPECTING") // PROSPECTING, QUALIFICATION, PROPOSAL, NEGOTIATION, CLOSED_WON, CLOSED_LOST
+  probability    Int      @default(0) // 0-100%
+  amount         Decimal  @db.Decimal(15, 2)
+  currency       String   @default("USD")
+  expectedCloseDate DateTime?
+  actualCloseDate DateTime?
+  source         String?  // LEAD, REFERRAL, EXISTING_CUSTOMER, OTHER
+  leadId         String?  // If converted from lead
+  description    String?
+  notes          String?
+  assignedTo     String?  // Clerk user ID
+  lostReason     String?  // If CLOSED_LOST
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      String
+  updatedBy      String?
+  deletedAt      DateTime?
+  deletedBy      String?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer     Customer     @relation(fields: [customerId], references: [id])
+  activities   Activity[]
+
+  @@unique([organizationId, opportunityNumber])
+  @@index([organizationId])
+  @@index([customerId])
+  @@index([stage])
+  @@index([assignedTo])
+  @@index([expectedCloseDate])
+  @@index([deletedAt])
+}
+
+// Activity - Track all CRM activities (calls, emails, meetings, tasks)
+model Activity {
+  id             String    @id @default(cuid())
+  organizationId String
+  type           String    // CALL, EMAIL, MEETING, TASK, NOTE
+  subject        String
+  description    String?
+  dueDate        DateTime?
+  completedAt    DateTime?
+  status         String    @default("PENDING") // PENDING, COMPLETED, CANCELLED
+  priority       String    @default("MEDIUM") // LOW, MEDIUM, HIGH
+  duration       Int?      // Duration in minutes
+  
+  // Polymorphic relations
+  leadId         String?
+  opportunityId  String?
+  customerId     String?
+  contactId      String?
+  
+  assignedTo     String?   // Clerk user ID
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  createdBy      String
+  updatedBy      String?
+  deletedAt      DateTime?
+  deletedBy      String?
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  lead         Lead?         @relation(fields: [leadId], references: [id])
+  opportunity  Opportunity?  @relation(fields: [opportunityId], references: [id])
+  customer     Customer?     @relation(fields: [customerId], references: [id])
+  contact      Contact?      @relation(fields: [contactId], references: [id])
+
+  @@index([organizationId])
+  @@index([type])
+  @@index([status])
+  @@index([dueDate])
+  @@index([leadId])
+  @@index([opportunityId])
+  @@index([customerId])
+  @@index([contactId])
+  @@index([assignedTo])
+  @@index([deletedAt])
+}
