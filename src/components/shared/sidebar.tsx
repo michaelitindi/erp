@@ -23,6 +23,13 @@ import {
   Warehouse,
   ShoppingBag,
   Calendar,
+  PiggyBank,
+  AlertTriangle,
+  HardDrive,
+  FolderKanban,
+  FolderOpen,
+  Cog,
+  Store,
 } from 'lucide-react'
 
 const navigation = [
@@ -35,6 +42,7 @@ const navigation = [
       { name: 'Invoices', href: '/dashboard/finance/invoices', icon: Receipt },
       { name: 'Bills', href: '/dashboard/finance/bills', icon: CreditCard },
       { name: 'Payments', href: '/dashboard/finance/payments', icon: DollarSign },
+      { name: 'Budgets', href: '/dashboard/finance/budgets', icon: PiggyBank },
     ]
   },
   { 
@@ -52,6 +60,7 @@ const navigation = [
     icon: ShoppingCart,
     children: [
       { name: 'Sales Orders', href: '/dashboard/sales/orders', icon: ShoppingCart },
+      { name: 'Shipments', href: '/dashboard/sales/shipments', icon: Truck },
     ]
   },
   { 
@@ -60,6 +69,7 @@ const navigation = [
     children: [
       { name: 'Products', href: '/dashboard/inventory/products', icon: Package },
       { name: 'Warehouses', href: '/dashboard/inventory/warehouses', icon: Warehouse },
+      { name: 'Reorder Alerts', href: '/dashboard/inventory/alerts', icon: AlertTriangle },
     ]
   },
   { 
@@ -77,6 +87,11 @@ const navigation = [
       { name: 'Leave', href: '/dashboard/hr/leave', icon: Calendar },
     ]
   },
+  { name: 'Assets', href: '/dashboard/assets', icon: HardDrive },
+  { name: 'Projects', href: '/dashboard/projects', icon: FolderKanban },
+  { name: 'Documents', href: '/dashboard/documents', icon: FolderOpen },
+  { name: 'Manufacturing', href: '/dashboard/manufacturing', icon: Cog },
+  { name: 'E-Commerce', href: '/dashboard/ecommerce', icon: Store },
   { name: 'Reports', href: '/dashboard/reports', icon: BarChart3 },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ]

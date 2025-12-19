@@ -120,3 +120,35 @@ export async function getProductStats() {
 
   return { total, active, lowStock: Number(lowStock[0]?.count || 0) }
 }
+
+// Get products that need reordering
+export async function getLowStockAlerts() {
+  const { orgId } = await getOrganization()
+  
+  // Get all products with their total stock and check against reorder level
+  const products = await prisma.product.findMany({
+    where: { organizationId: orgId, deletedAt: null, isActive: true, reorderLevel: { gt: 0 } },
+    include: { 
+      stockLevels: { select: { quantity: true } },
+    }
+  })
+
+  const alerts = products
+    .map(p => {
+      const totalStock = p.stockLevels.reduce((sum, sl) => sum + Number(sl.quantity), 0)
+      const isLow = totalStock <= p.reorderLevel
+      const isCritical = totalStock === 0
+      return { 
+        ...p, 
+        totalStock, 
+        isLow, 
+        isCritical,
+        deficit: p.reorderLevel - totalStock,
+        suggestedOrder: p.reorderQuantity > 0 ? p.reorderQuantity : p.reorderLevel * 2
+      }
+    })
+    .filter(p => p.isLow)
+    .sort((a, b) => a.deficit - b.deficit) // Most critical first
+
+  return alerts
+}
