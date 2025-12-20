@@ -375,3 +375,97 @@ export async function sendNewOrderNotification(data: NewOrderNotificationData) {
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
   }
 }
+
+// ================================
+// FEEDBACK STATUS CHANGE EMAIL
+// ================================
+interface FeedbackStatusChangeData {
+  feedbackTitle: string
+  feedbackId: string
+  authorName: string
+  authorEmail: string
+  oldStatus: string
+  newStatus: string
+  feedbackUrl: string
+}
+
+const statusLabels: Record<string, { label: string; color: string; emoji: string }> = {
+  UNDER_REVIEW: { label: 'Under Review', color: '#eab308', emoji: '🔍' },
+  PLANNED: { label: 'Planned', color: '#3b82f6', emoji: '📋' },
+  IN_PROGRESS: { label: 'In Progress', color: '#8b5cf6', emoji: '🚀' },
+  COMPLETED: { label: 'Completed', color: '#22c55e', emoji: '✅' },
+  DECLINED: { label: 'Declined', color: '#6b7280', emoji: '❌' },
+}
+
+export async function sendFeedbackStatusChange(data: FeedbackStatusChangeData) {
+  const newStatusInfo = statusLabels[data.newStatus] || statusLabels.UNDER_REVIEW
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f3f4f6; margin: 0; padding: 20px;">
+      <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, ${newStatusInfo.color}, ${newStatusInfo.color}dd); padding: 32px; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">${newStatusInfo.emoji} Status Updated!</h1>
+          <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0;">Your feedback has a new status</p>
+        </div>
+        
+        <!-- Content -->
+        <div style="padding: 32px;">
+          <p style="color: #374151; font-size: 16px; margin: 0 0 24px;">
+            Hi ${data.authorName},<br><br>
+            Great news! Your feedback has been reviewed and its status has been updated.
+          </p>
+          
+          <!-- Feedback Title -->
+          <div style="background: #f9fafb; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+            <p style="margin: 0; color: #6b7280; font-size: 12px; text-transform: uppercase;">Your Feedback</p>
+            <p style="margin: 4px 0 0; color: #111827; font-size: 18px; font-weight: 600;">${data.feedbackTitle}</p>
+          </div>
+          
+          <!-- Status Change -->
+          <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 24px;">
+            <p style="margin: 0; color: #6b7280; font-size: 14px;">New Status</p>
+            <p style="margin: 8px 0 0; color: ${newStatusInfo.color}; font-size: 24px; font-weight: 700;">
+              ${newStatusInfo.emoji} ${newStatusInfo.label}
+            </p>
+          </div>
+          
+          <div style="text-align: center;">
+            <a href="${data.feedbackUrl}" style="display: inline-block; background: ${newStatusInfo.color}; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600;">View Your Feedback</a>
+          </div>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background: #f9fafb; padding: 24px; text-align: center; border-top: 1px solid #e5e7eb;">
+          <p style="margin: 0; color: #6b7280; font-size: 14px;">
+            Thank you for helping us improve!
+          </p>
+          <p style="margin: 8px 0 0; color: #9ca3af; font-size: 12px;">
+            You're receiving this because you submitted feedback.
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `
+
+  try {
+    const result = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: data.authorEmail,
+      subject: `${newStatusInfo.emoji} Your feedback is now "${newStatusInfo.label}"`,
+      html,
+    })
+    return { success: true, id: result.data?.id }
+  } catch (error) {
+    console.error('Failed to send feedback status change email:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
+

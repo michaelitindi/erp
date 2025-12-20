@@ -100,7 +100,7 @@ export default async function DashboardPage() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       {/* Page Header */}
       <div>
         <h1 className="text-2xl font-bold text-white">Dashboard</h1>

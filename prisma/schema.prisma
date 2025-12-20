@@ -1561,3 +1561,69 @@ model OnlineOrderItem {
 
   @@index([orderId])
 }
+
+// ============================================
+// PUBLIC FEEDBACK BOARD
+// ============================================
+
+model Feedback {
+  id           String    @id @default(cuid())
+  title        String
+  description  String
+  category     String    @default("FEATURE") // FEATURE, BUG, IMPROVEMENT, QUESTION
+  status       String    @default("UNDER_REVIEW") // UNDER_REVIEW, PLANNED, IN_PROGRESS, COMPLETED, DECLINED
+  priority     Int       @default(0) // For admin pinning/ordering
+  isPinned     Boolean   @default(false)
+  // Author info - supports both logged-in users and email-only guests
+  authorEmail  String
+  authorName   String
+  authorUserId String?   // Clerk user ID if logged in
+  // Voting tracking (denormalized for performance)
+  voteCount    Int       @default(0)
+  // Timestamps
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  votes   FeedbackVote[]
+  replies FeedbackReply[]
+
+  @@index([status])
+  @@index([category])
+  @@index([voteCount])
+  @@index([createdAt])
+  @@index([authorEmail])
+}
+
+model FeedbackVote {
+  id         String   @id @default(cuid())
+  feedbackId String
+  // Voter info - email for guests, userId for logged-in
+  voterEmail String
+  voterUserId String?
+  createdAt  DateTime @default(now())
+
+  feedback Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+
+  @@unique([feedbackId, voterEmail]) // One vote per email per feedback
+  @@index([feedbackId])
+  @@index([voterEmail])
+}
+
+model FeedbackReply {
+  id         String   @id @default(cuid())
+  feedbackId String
+  content    String
+  // Author must be logged in for replies
+  authorName   String
+  authorUserId String
+  authorEmail  String
+  isOfficial   Boolean  @default(false) // Is this from an admin/team member?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  feedback Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+
+  @@index([feedbackId])
+  @@index([createdAt])
+}
+

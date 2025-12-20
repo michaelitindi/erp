@@ -10,6 +10,8 @@ import {
   Shield,
   Zap,
   Globe,
+  MessageSquare,
+  Map,
 } from 'lucide-react'
 
 export default async function HomePage() {
@@ -65,7 +67,21 @@ export default async function HomePage() {
               </div>
               <span className="text-xl font-semibold text-white">ERP System</span>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-6">
+              <Link
+                href="/feedback"
+                className="flex items-center gap-1.5 text-sm text-slate-300 hover:text-white transition-colors"
+              >
+                <MessageSquare className="h-4 w-4" />
+                Feedback
+              </Link>
+              <Link
+                href="/roadmap"
+                className="flex items-center gap-1.5 text-sm text-slate-300 hover:text-white transition-colors"
+              >
+                <Map className="h-4 w-4" />
+                Roadmap
+              </Link>
               <Link
                 href="/sign-in"
                 className="text-sm text-slate-300 hover:text-white transition-colors"
