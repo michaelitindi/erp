@@ -1,3 +1,5 @@
+'use client'
+
 import { ModuleNav } from '@/components/shared/module-nav'
 import { ShoppingBag } from 'lucide-react'
 

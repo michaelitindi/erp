@@ -1,3 +1,5 @@
+'use client'
+
 import { ModuleNav } from '@/components/shared/module-nav'
 import { FileText, Receipt, CreditCard, DollarSign, PiggyBank } from 'lucide-react'
 

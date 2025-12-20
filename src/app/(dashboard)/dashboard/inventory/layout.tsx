@@ -1,3 +1,5 @@
+'use client'
+
 import { ModuleNav } from '@/components/shared/module-nav'
 import { Package, Warehouse, AlertTriangle } from 'lucide-react'
 
