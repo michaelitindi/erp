@@ -118,7 +118,7 @@ export default async function HomePage() {
                 href="/sign-up"
                 className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-base font-medium text-white hover:bg-blue-700 transition-colors"
               >
-                Start Free Trial
+                Get Started
                 <ArrowRight className="h-5 w-5" />
               </Link>
               <Link
