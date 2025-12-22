@@ -2,10 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ALL_MODULES, completeOnboarding, ModuleType } from '@/app/actions/onboarding'
+import { completeOnboarding } from '@/app/actions/onboarding'
+import { ALL_MODULES, DEFAULT_MODULES, ModuleType } from '@/lib/modules'
 import { Check, ArrowRight, Sparkles } from 'lucide-react'
-
-const DEFAULT_MODULES: ModuleType[] = ['FINANCE', 'CRM', 'SALES', 'INVENTORY']
 
 export default function OnboardingPage() {
   const [selectedModules, setSelectedModules] = useState<ModuleType[]>(DEFAULT_MODULES)
