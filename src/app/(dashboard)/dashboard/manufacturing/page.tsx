@@ -1,11 +1,13 @@
 import { getBOMs, getWorkOrders, getManufacturingStats } from '@/app/actions/manufacturing'
 import { getProducts } from '@/app/actions/products'
+import { checkModuleAccess } from '@/lib/module-access'
 import { CreateBOMButton, CreateWorkOrderButton } from '@/components/manufacturing/manufacturing-buttons'
 import { BOMsTable } from '@/components/manufacturing/boms-table'
 import { WorkOrdersTable } from '@/components/manufacturing/work-orders-table'
 import { Cog, FileCode, PlayCircle, Package } from 'lucide-react'
 
 export default async function ManufacturingPage() {
+  await checkModuleAccess('MANUFACTURING')
   const [boms, workOrders, stats, products] = await Promise.all([
     getBOMs(), 
     getWorkOrders(), 

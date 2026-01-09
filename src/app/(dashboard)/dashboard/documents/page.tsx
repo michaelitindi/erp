@@ -1,9 +1,11 @@
 import { getDocuments, getDocumentStats } from '@/app/actions/documents'
+import { checkModuleAccess } from '@/lib/module-access'
 import { DocumentsTable } from '@/components/documents/documents-table'
 import { UploadDocumentButton } from '@/components/documents/document-buttons'
 import { FileText, Archive, Clock, FolderOpen } from 'lucide-react'
 
 export default async function DocumentsPage() {
+  await checkModuleAccess('DOCUMENTS')
   const [documents, stats] = await Promise.all([getDocuments(), getDocumentStats()])
 
   return (

@@ -1,9 +1,11 @@
 import { getProjects, getProjectStats } from '@/app/actions/projects'
+import { checkModuleAccess } from '@/lib/module-access'
 import { ProjectsTable } from '@/components/projects/projects-table'
 import { CreateProjectButton } from '@/components/projects/project-buttons'
 import { FolderKanban, PlayCircle, CheckCircle, Clock } from 'lucide-react'
 
 export default async function ProjectsPage() {
+  await checkModuleAccess('PROJECTS')
   const [projects, stats] = await Promise.all([getProjects(), getProjectStats()])
 
   return (

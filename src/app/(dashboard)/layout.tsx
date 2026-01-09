@@ -92,6 +92,7 @@ export default async function DashboardLayout({
 
   // Determine which modules to show
   let modulesToShow: string[] = []
+  let employeeModules: string[] = []
   
   if (userIsAdmin) {
     // Admins see all enabled organization modules
@@ -116,6 +117,7 @@ export default async function DashboardLayout({
     </div>
   )
 }
+
 
 
 

@@ -1,24 +1,21 @@
-'use client'
+import { checkModuleAccess } from '@/lib/module-access'
+import { HRModuleNav } from './hr-nav'
 
-import { ModuleNav } from '@/components/shared/module-nav'
-import { Users, Calendar } from 'lucide-react'
-
-const hrNavItems = [
-  { name: 'Employees', href: '/dashboard/hr/employees', icon: Users },
-  { name: 'Leave', href: '/dashboard/hr/leave', icon: Calendar },
-]
-
-export default function HRLayout({
+export default async function HRLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // Check if user has access to HR module
+  await checkModuleAccess('HR')
+  
   return (
     <div className="space-y-0">
-      <ModuleNav moduleName="HR" items={hrNavItems} />
+      <HRModuleNav />
       <div className="p-6">
         {children}
       </div>
     </div>
   )
 }
+

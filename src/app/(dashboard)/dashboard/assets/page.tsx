@@ -1,9 +1,11 @@
 import { getAssets, getAssetStats } from '@/app/actions/assets'
+import { checkModuleAccess } from '@/lib/module-access'
 import { AssetsTable } from '@/components/assets/assets-table'
 import { CreateAssetButton } from '@/components/assets/asset-buttons'
 import { Building2, Package, DollarSign, CheckCircle } from 'lucide-react'
 
 export default async function AssetsPage() {
+  await checkModuleAccess('ASSETS')
   const [assets, stats] = await Promise.all([getAssets(), getAssetStats()])
 
   return (

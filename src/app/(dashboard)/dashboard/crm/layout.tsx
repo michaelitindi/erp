@@ -1,26 +1,21 @@
-'use client'
+import { checkModuleAccess } from '@/lib/module-access'
+import { CRMModuleNav } from './crm-nav'
 
-import { ModuleNav } from '@/components/shared/module-nav'
-import { Building2, Truck, UserPlus, Target } from 'lucide-react'
-
-const crmNavItems = [
-  { name: 'Customers', href: '/dashboard/crm/customers', icon: Building2 },
-  { name: 'Vendors', href: '/dashboard/crm/vendors', icon: Truck },
-  { name: 'Leads', href: '/dashboard/crm/leads', icon: UserPlus },
-  { name: 'Opportunities', href: '/dashboard/crm/opportunities', icon: Target },
-]
-
-export default function CRMLayout({
+export default async function CRMLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // Check if user has access to CRM module
+  await checkModuleAccess('CRM')
+  
   return (
     <div className="space-y-0">
-      <ModuleNav moduleName="CRM" items={crmNavItems} />
+      <CRMModuleNav />
       <div className="p-6">
         {children}
       </div>
     </div>
   )
 }
+

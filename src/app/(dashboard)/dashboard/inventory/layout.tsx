@@ -1,25 +1,20 @@
-'use client'
+import { checkModuleAccess } from '@/lib/module-access'
+import { InventoryModuleNav } from './inventory-nav'
 
-import { ModuleNav } from '@/components/shared/module-nav'
-import { Package, Warehouse, AlertTriangle } from 'lucide-react'
-
-const inventoryNavItems = [
-  { name: 'Products', href: '/dashboard/inventory/products', icon: Package },
-  { name: 'Warehouses', href: '/dashboard/inventory/warehouses', icon: Warehouse },
-  { name: 'Reorder Alerts', href: '/dashboard/inventory/alerts', icon: AlertTriangle },
-]
-
-export default function InventoryLayout({
+export default async function InventoryLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  await checkModuleAccess('INVENTORY')
+  
   return (
     <div className="space-y-0">
-      <ModuleNav moduleName="Inventory" items={inventoryNavItems} />
+      <InventoryModuleNav />
       <div className="p-6">
         {children}
       </div>
     </div>
   )
 }
+

@@ -1,10 +1,12 @@
 import { getStores, getOnlineOrders, getEcommerceStats, getOnlineProducts } from '@/app/actions/ecommerce'
+import { checkModuleAccess } from '@/lib/module-access'
 import { StoresTable } from '@/components/ecommerce/stores-table'
 import { CreateStoreButton } from '@/components/ecommerce/store-buttons'
 import { CreateProductButton, ProductsTable } from '@/components/ecommerce/products'
 import { Store, ShoppingBag, Package, DollarSign, Clock } from 'lucide-react'
 
 export default async function EcommercePage() {
+  await checkModuleAccess('ECOMMERCE')
   const [stores, orders, stats, products] = await Promise.all([
     getStores(), 
     getOnlineOrders(), 

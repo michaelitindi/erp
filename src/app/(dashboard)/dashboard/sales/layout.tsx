@@ -1,24 +1,21 @@
-'use client'
+import { checkModuleAccess } from '@/lib/module-access'
+import { SalesModuleNav } from './sales-nav'
 
-import { ModuleNav } from '@/components/shared/module-nav'
-import { ShoppingCart, Truck } from 'lucide-react'
-
-const salesNavItems = [
-  { name: 'Sales Orders', href: '/dashboard/sales/orders', icon: ShoppingCart },
-  { name: 'Shipments', href: '/dashboard/sales/shipments', icon: Truck },
-]
-
-export default function SalesLayout({
+export default async function SalesLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // Check if user has access to SALES module
+  await checkModuleAccess('SALES')
+  
   return (
     <div className="space-y-0">
-      <ModuleNav moduleName="Sales" items={salesNavItems} />
+      <SalesModuleNav />
       <div className="p-6">
         {children}
       </div>
     </div>
   )
 }
+
