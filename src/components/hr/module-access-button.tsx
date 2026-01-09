@@ -2,31 +2,30 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getEmployeeById, updateEmployeeModules } from '@/app/actions/employees'
+import { updateEmployeeModules } from '@/app/actions/employees'
 import { ALL_MODULES } from '@/lib/modules'
 import { Settings, X, Check } from 'lucide-react'
-
-type Employee = {
-  id: string
-  firstName: string
-  lastName: string
-  email: string
-  position: string
-  department: string | null
-  allowedModules: string[]
-}
 
 interface ModuleAccessButtonProps {
   employeeId: string
   employeeName: string
   currentModules: string[]
+  orgEnabledModules: string[]  // Only show modules the org has enabled
 }
 
-export function ModuleAccessButton({ employeeId, employeeName, currentModules }: ModuleAccessButtonProps) {
+export function ModuleAccessButton({ 
+  employeeId, 
+  employeeName, 
+  currentModules,
+  orgEnabledModules 
+}: ModuleAccessButtonProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [selectedModules, setSelectedModules] = useState<string[]>(currentModules)
   const router = useRouter()
+
+  // Filter to only show modules that the org has enabled
+  const availableModules = ALL_MODULES.filter(m => orgEnabledModules.includes(m.id))
 
   function toggleModule(moduleId: string) {
     setSelectedModules(prev => 
@@ -79,29 +78,35 @@ export function ModuleAccessButton({ employeeId, employeeName, currentModules }:
               Select which modules this employee can access. They will always have access to My Portal.
             </p>
 
-            <div className="space-y-2 max-h-80 overflow-y-auto">
-              {ALL_MODULES.map((module) => (
-                <button
-                  key={module.id}
-                  type="button"
-                  onClick={() => toggleModule(module.id)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors ${
-                    selectedModules.includes(module.id)
-                      ? 'border-blue-500 bg-blue-500/10'
-                      : 'border-slate-700 bg-slate-700/30 hover:bg-slate-700/50'
-                  }`}
-                >
-                  <span className="text-xl">{module.icon}</span>
-                  <div className="flex-1 text-left">
-                    <div className="text-sm font-medium text-white">{module.name}</div>
-                    <div className="text-xs text-slate-400">{module.description}</div>
-                  </div>
-                  {selectedModules.includes(module.id) && (
-                    <Check className="h-5 w-5 text-blue-400" />
-                  )}
-                </button>
-              ))}
-            </div>
+            {availableModules.length === 0 ? (
+              <div className="text-center py-6 text-slate-400">
+                No modules enabled for this organization yet.
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-80 overflow-y-auto">
+                {availableModules.map((module) => (
+                  <button
+                    key={module.id}
+                    type="button"
+                    onClick={() => toggleModule(module.id)}
+                    className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+                      selectedModules.includes(module.id)
+                        ? 'border-blue-500 bg-blue-500/10'
+                        : 'border-slate-700 bg-slate-700/30 hover:bg-slate-700/50'
+                    }`}
+                  >
+                    <span className="text-xl">{module.icon}</span>
+                    <div className="flex-1 text-left">
+                      <div className="text-sm font-medium text-white">{module.name}</div>
+                      <div className="text-xs text-slate-400">{module.description}</div>
+                    </div>
+                    {selectedModules.includes(module.id) && (
+                      <Check className="h-5 w-5 text-blue-400" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
 
             <div className="flex gap-3 mt-6">
               <button
@@ -125,3 +130,4 @@ export function ModuleAccessButton({ employeeId, employeeName, currentModules }:
     </>
   )
 }
+

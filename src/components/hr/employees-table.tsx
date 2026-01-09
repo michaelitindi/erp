@@ -22,12 +22,17 @@ interface Employee {
   _count?: { leaveRequests: number; timesheets: number }
 }
 
+interface EmployeesTableProps {
+  employees: Employee[]
+  orgEnabledModules: string[]
+}
+
 const getAmount = (amt: number | { toNumber: () => number } | null): number => {
   if (!amt) return 0
   return typeof amt === 'number' ? amt : amt?.toNumber?.() || 0
 }
 
-export function EmployeesTable({ employees }: { employees: Employee[] }) {
+export function EmployeesTable({ employees, orgEnabledModules }: EmployeesTableProps) {
   const [processingId, setProcessingId] = useState<string | null>(null)
   const router = useRouter()
 
@@ -88,6 +93,7 @@ export function EmployeesTable({ employees }: { employees: Employee[] }) {
                     employeeId={emp.id}
                     employeeName={`${emp.firstName} ${emp.lastName}`}
                     currentModules={emp.allowedModules}
+                    orgEnabledModules={orgEnabledModules}
                   />
                   {emp.status === 'ACTIVE' && (
                     <button onClick={() => handleStatusChange(emp.id, 'INACTIVE')} disabled={processingId === emp.id} className="rounded-lg p-1.5 text-slate-400 hover:bg-yellow-600/20 hover:text-yellow-400 transition-colors disabled:opacity-50" title="Deactivate">

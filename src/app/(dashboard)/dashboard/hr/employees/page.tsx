@@ -1,13 +1,17 @@
 import { getEmployees, getEmployeeStats } from '@/app/actions/employees'
+import { getOrganizationWithModules } from '@/app/actions/onboarding'
 import { EmployeesTable } from '@/components/hr/employees-table'
 import { CreateEmployeeButton } from '@/components/hr/employee-buttons'
 import { Users, UserCheck, Briefcase, Clock } from 'lucide-react'
 
 export default async function EmployeesPage() {
-  const [employees, stats] = await Promise.all([
+  const [employees, stats, org] = await Promise.all([
     getEmployees(),
-    getEmployeeStats()
+    getEmployeeStats(),
+    getOrganizationWithModules()
   ])
+  
+  const orgModules = org?.enabledModules || []
 
   return (
     <div className="space-y-6">
@@ -54,8 +58,9 @@ export default async function EmployeesPage() {
           <div className="mt-6"><CreateEmployeeButton /></div>
         </div>
       ) : (
-        <EmployeesTable employees={employees} />
+        <EmployeesTable employees={employees} orgEnabledModules={orgModules} />
       )}
     </div>
   )
 }
+
